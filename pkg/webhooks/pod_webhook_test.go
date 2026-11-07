@@ -272,10 +272,10 @@ func TestExclusiveAffinityApplied(t *testing.T) {
 func TestGetSubGroupIndex(t *testing.T) {
 	tests := []struct {
 		name                  string
+		policyType            leaderworkerset.SubGroupPolicyType
 		podCount              int
 		subGroupSize          int
 		workerIndex           int
-		leaderOnly            bool
 		expectedSubGroupIndex string
 	}{
 		{
@@ -306,11 +306,51 @@ func TestGetSubGroupIndex(t *testing.T) {
 			workerIndex:           2,
 			expectedSubGroupIndex: "2",
 		},
+		{
+			name:                  "LeaderExcluded, SubGroupSize 1, workerIndex 1",
+			policyType:            leaderworkerset.SubGroupPolicyTypeLeaderExcluded,
+			podCount:              3,
+			subGroupSize:          1,
+			workerIndex:           1,
+			expectedSubGroupIndex: "0",
+		},
+		{
+			name:                  "LeaderExcluded, SubGroupSize 1, workerIndex 2",
+			policyType:            leaderworkerset.SubGroupPolicyTypeLeaderExcluded,
+			podCount:              3,
+			subGroupSize:          1,
+			workerIndex:           2,
+			expectedSubGroupIndex: "1",
+		},
+		{
+			name:                  "LeaderExcluded, SubGroupSize 2, workerIndex 1",
+			policyType:            leaderworkerset.SubGroupPolicyTypeLeaderExcluded,
+			podCount:              5,
+			subGroupSize:          2,
+			workerIndex:           1,
+			expectedSubGroupIndex: "0",
+		},
+		{
+			name:                  "LeaderExcluded, SubGroupSize 2, workerIndex 2",
+			policyType:            leaderworkerset.SubGroupPolicyTypeLeaderExcluded,
+			podCount:              5,
+			subGroupSize:          2,
+			workerIndex:           2,
+			expectedSubGroupIndex: "0",
+		},
+		{
+			name:                  "LeaderExcluded, SubGroupSize 2, workerIndex 3",
+			policyType:            leaderworkerset.SubGroupPolicyTypeLeaderExcluded,
+			podCount:              5,
+			subGroupSize:          2,
+			workerIndex:           3,
+			expectedSubGroupIndex: "1",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			subGroupIndex := getSubGroupIndex(tc.podCount, tc.subGroupSize, tc.workerIndex)
+			subGroupIndex := getSubGroupIndex(tc.policyType, tc.podCount, tc.subGroupSize, tc.workerIndex)
 			if tc.expectedSubGroupIndex != subGroupIndex {
 				t.Errorf("Expected subGroupIndex to be %s, got %s", tc.expectedSubGroupIndex, subGroupIndex)
 			}

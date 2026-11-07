@@ -140,3 +140,41 @@ func TestPodWebhookDefaultLeaderAddress(t *testing.T) {
 		assert.Equal(t, "test-lws-3.test-lws.default", pod.Spec.Containers[0].Env[0].Value)
 	})
 }
+
+func TestPodWebhookDefaultLeaderExcludedSubGroup(t *testing.T) {
+	webhook := &PodWebhook{}
+	ctx := context.Background()
+
+	leader := ordinalPod("test-lws-0", map[string]string{
+		leaderworkerset.SizeAnnotationKey:               "3",
+		leaderworkerset.SubGroupSizeAnnotationKey:       "1",
+		leaderworkerset.SubGroupPolicyTypeAnnotationKey: string(leaderworkerset.SubGroupPolicyTypeLeaderExcluded),
+	}, map[string]string{
+		leaderworkerset.GroupIndexLabelKey:  "0",
+		leaderworkerset.WorkerIndexLabelKey: "0",
+	})
+	require.NoError(t, webhook.Default(ctx, leader))
+	assert.Empty(t, leader.Labels[leaderworkerset.SubGroupIndexLabelKey])
+
+	worker1 := ordinalPod("test-lws-0-1", map[string]string{
+		leaderworkerset.SizeAnnotationKey:               "3",
+		leaderworkerset.SubGroupSizeAnnotationKey:       "1",
+		leaderworkerset.SubGroupPolicyTypeAnnotationKey: string(leaderworkerset.SubGroupPolicyTypeLeaderExcluded),
+		leaderworkerset.LeaderPodNameAnnotationKey:      "test-lws-0",
+	}, map[string]string{
+		leaderworkerset.GroupIndexLabelKey: "0",
+	})
+	require.NoError(t, webhook.Default(ctx, worker1))
+	assert.Equal(t, "0", worker1.Labels[leaderworkerset.SubGroupIndexLabelKey])
+
+	worker2 := ordinalPod("test-lws-0-2", map[string]string{
+		leaderworkerset.SizeAnnotationKey:               "3",
+		leaderworkerset.SubGroupSizeAnnotationKey:       "1",
+		leaderworkerset.SubGroupPolicyTypeAnnotationKey: string(leaderworkerset.SubGroupPolicyTypeLeaderExcluded),
+		leaderworkerset.LeaderPodNameAnnotationKey:      "test-lws-0",
+	}, map[string]string{
+		leaderworkerset.GroupIndexLabelKey: "0",
+	})
+	require.NoError(t, webhook.Default(ctx, worker2))
+	assert.Equal(t, "1", worker2.Labels[leaderworkerset.SubGroupIndexLabelKey])
+}
